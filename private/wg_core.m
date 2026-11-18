@@ -171,8 +171,8 @@ found = true;
 location = 'cell';
 if strcmp(spec.source,'ft44')
     switch lower(spec.field)
-        case 'd_neutral_density'
-            values = data.dab2(:,1,1) + data.dmb2(:,1,1);
+        case 'total_d_density'
+            values = data.dab2(:,1,1) + 2*data.dmb2(:,1,1);
             return
         case 'total_atom_density'
             values = sum(data.dab2,3);
@@ -990,7 +990,7 @@ unit = 'file units';
 scale = 1;
 ev = 1.602176634e-19;
 switch lower(spec.field)
-    case {'ne','na','dab2','dmb2','dib2','pdena','pdenm','pdeni','d_neutral_density','total_atom_density','total_molecule_density','total_test_ion_density'}
+    case {'ne','na','dab2','dmb2','dib2','pdena','pdenm','pdeni','total_d_density','total_atom_density','total_molecule_density','total_test_ion_density'}
         unit = 'm^{-3}';
     case 'te'
         label = 'T_e';

@@ -13,20 +13,20 @@ p.geometryFile = '';
 % Example: wg_core('spec','b2fstate','na',2) selects B2 species 2 (one-based indexing).
 % Example: wg_core('spec','b2fstate','fhi',{':',1}) selects face-flux component 1.
 p.quantities = {
-    wg_core('spec','ft44','D_neutral_density'), 
+    wg_core('spec','ft44','total_D_density'),
     wg_core('spec','b2fstati', 'te')
 };
 % 'auto' selects log for suitable positive fields; use 'linear' or 'log' to force a scale.
 % Example: 'linear' is appropriate for signed fluxes and potentials.
-p.colorScale = 'linear';
+p.colorScale = 'log';
 % Empty computes limits from the data. Example: [1e15,1e20] fixes the color range.
 % For per-quantity limits, set spec.clim after creating that spec instead.
-p.colorLimits = [0 50];
+p.colorLimits = [];
 % Automatic log scale spans at most this many decades from the maximum.
 % Example: 5 displays values from max(data)/1e5 to max(data).
 p.logDecades = 8;
 % Any MATLAB colormap available by name. Example: 'parula', 'jet', or 'hot'.
-p.colormap = 'turbo';
+p.colormap = 'hot';
 % Empty displays the full domain. Example: [0.58,1.14,-0.765,0.33] sets R and Z limits.
 p.zoom = [];
 % false plots physical B2 cells 1:nCi only; true also includes valid guard polygons.

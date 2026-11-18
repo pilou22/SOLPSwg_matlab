@@ -176,7 +176,7 @@ For `ft44`, these names are available in addition to the raw fields:
 
 | Derived field              | Definition                         |
 |----------------------------|------------------------------------|
-| `D_neutral_density`        | `dab2(:,1,1) + dmb2(:,1,1)`        |
+| `total_D_density`         | `dab2(:,1,1) + 2*dmb2(:,1,1)`      |
 | `total_atom_density`       | Sum over all atom densities        |
 | `total_molecule_density`   | Sum over all molecule densities    |
 | `total_test_ion_density`   | Sum over all test-ion densities    |
@@ -195,7 +195,7 @@ Main controls:
 ```matlab
 p.runDir = '/path/to/run';
 p.quantities = {
-    wg_core('spec','ft44','D_neutral_density')
+    wg_core('spec','ft44','total_D_density')
     wg_core('spec','b2fstate','te')
 };
 
@@ -381,8 +381,8 @@ p.dpi = 250;
 Typical output names are:
 
 ```text
-2D_ft44_D_neutral_density.png
-2D_ft44_D_neutral_density.mat
+2D_ft44_total_D_density.png
+2D_ft44_total_D_density.mat
 profiles_inner_outer.png
 profiles_inner_outer.mat
 location_inner_outer.png
