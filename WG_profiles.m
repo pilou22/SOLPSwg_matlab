@@ -1,16 +1,16 @@
 clearvars;
 clc;
-wg_setup;
+wg_core('setup');
 
 %% User parameters
-p = wg_defaults;
+p = wg_core('defaults');
 % Run containing the SOLPS output files. Example: replace this with '.../run2'.
 p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
-% One quantity becomes one panel. Example species selection: wg_spec('b2fstate','na',2).
+% One quantity becomes one panel. Example species selection: wg_core('spec','b2fstate','na',2).
 % Sources are b2fstate, b2fstati, b2fplasmf, ft44, and ft46; indices are one-based.
 p.quantities = {
-    wg_spec('b2fstati','ne')
-    wg_spec('b2fstati','te')
+    wg_core('spec','b2fstati','ne')
+    wg_core('spec','b2fstati','te')
 };
 % Modes are 'inner', 'outer', 'labels', and 'line'.
 % Use a cell array for overlays. Example: {'inner','outer'} or {'inner','outer','line'}.
@@ -91,8 +91,8 @@ p.outputDir = '';
 p.dpi = 250;
 
 %% Build locations, compute profiles, and plot
-run = wg_load_run(p);
-locations = wg_profile_locations(run,p);
+run = wg_core('load_run',p);
+locations = wg_core('profile_locations',run,p);
 modeNames = cellfun(@(x) x.name,locations,'UniformOutput',false);
 if any(strcmp(modeNames,'line')) && any(~strcmp(modeNames,'line'))
     lineAxis = lower(p.profileX);
@@ -120,12 +120,12 @@ for k = 1:nQuantities
     for m = 1:numel(locations)
         location = locations{m};
         if strcmp(location.name,'line')
-            [run,newProfile] = wg_line_profile(run,p.quantities{k},p);
+            [run,newProfile] = wg_core('line_profile',run,p.quantities{k},p);
         else
-            [run,newProfile] = wg_target_profile(run,location.target,p.quantities{k},p);
+            [run,newProfile] = wg_core('target_profile',run,location.target,p.quantities{k},p);
         end
         for j = 1:numel(newProfile.parts)
-            newProfile.parts(j).legend = wg_part_legend(location,newProfile.parts(j),run,p);
+            newProfile.parts(j).legend = wg_core('part_legend',location,newProfile.parts(j),run,p);
             newProfile.parts(j).mode = location.name;
             newProfile.parts(j).isSparse = newProfile.isSparse;
         end
@@ -166,12 +166,12 @@ for k = 1:nQuantities
     box(ax,'on');
 end
 if p.plotLocationMap
-    [run,locationFigure] = wg_plot_location_map(run,p,locations);
+    [run,locationFigure] = wg_core('plot_location_map',run,p,locations);
 end
 name = strjoin(modeNames,'_');
 if any(strcmp(modeNames,'labels'))
     name = sprintf('%s_fcLbl_%s',name,strjoin(arrayfun(@num2str,p.customTargetLabels,'UniformOutput',false),'_'));
 end
-wg_save_figure(fig,run,p,['profiles_',name]);
+wg_core('save_figure',fig,run,p,['profiles_',name]);
 data = struct('profiles',{profiles},'parameters',p,'sourceFiles',run.files,'locations',{locations});
-wg_export_data(run,p,['profiles_',name],data);
+wg_core('export_data',run,p,['profiles_',name],data);

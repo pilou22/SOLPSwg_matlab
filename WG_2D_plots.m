@@ -1,20 +1,20 @@
 clearvars;
 clc;
-wg_setup;
+wg_core('setup');
 
 %% User parameters
-p = wg_defaults;
+p = wg_core('defaults');
 % Run containing SOLPS output. Example: replace this path with '.../run2'.
 p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
 % Empty searches runDir, b2mn.exe.dir, ../baserun, and baserun for b2fgmtry.
 % Example: fullfile(p.runDir,'../baserun/b2fgmtry') selects the geometry explicitly.
 p.geometryFile = '';
 % One quantity produces one figure. Sources are b2fstate, b2fstati, b2fplasmf, ft44, and ft46.
-% Example: wg_spec('b2fstate','na',2) selects B2 species 2 (one-based indexing).
-% Example: wg_spec('b2fstate','fhi',{':',1}) selects face-flux component 1.
+% Example: wg_core('spec','b2fstate','na',2) selects B2 species 2 (one-based indexing).
+% Example: wg_core('spec','b2fstate','fhi',{':',1}) selects face-flux component 1.
 p.quantities = {
-    wg_spec('ft44','D_neutral_density'), 
-    wg_spec('b2fstati', 'te')
+    wg_core('spec','ft44','D_neutral_density'), 
+    wg_core('spec','b2fstati', 'te')
 };
 % 'auto' selects log for suitable positive fields; use 'linear' or 'log' to force a scale.
 % Example: 'linear' is appropriate for signed fluxes and potentials.
@@ -53,8 +53,8 @@ p.outputDir = '';
 p.dpi = 250;
 
 %% Generate figures
-run = wg_load_run(p);
+run = wg_core('load_run',p);
 figures = cell(size(p.quantities));
 for k = 1:numel(p.quantities)
-    [run,figures{k}] = wg_plot_map(run,p.quantities{k},p);
+    [run,figures{k}] = wg_core('plot_map',run,p.quantities{k},p);
 end

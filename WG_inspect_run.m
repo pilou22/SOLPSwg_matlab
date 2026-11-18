@@ -1,9 +1,9 @@
 clearvars;
 clc;
-wg_setup;
+wg_core('setup');
 
 %% User parameters
-p = wg_defaults;
+p = wg_core('defaults');
 % Run to inspect. Example: replace this with another run containing b2fstate and fort.44.
 p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
 % Sources to read and summarize; an absent formatted b2fplasmf is reported without stopping.
@@ -11,14 +11,14 @@ p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/
 p.sources = {'b2fstate','b2fplasmf','ft44','ft46'};
 
 %% Print source dimensions, species metadata, and face-label geometry
-run = wg_load_run(p);
+run = wg_core('load_run',p);
 fprintf('\nRun: %s\n',run.runDir);
 fprintf('Geometry: %s\n',run.files.geometry);
 fprintf('nCi=%d, nCg=%d, nCv=%d, nFc=%d, nVx=%d\n',run.gmtry.nCi,run.gmtry.nCg,run.gmtry.nCv,run.gmtry.nFc,run.gmtry.nVx);
 for k = 1:numel(p.sources)
     source = p.sources{k};
     try
-        [run,data] = wg_load_source(run,source);
+        [run,data] = wg_core('load_source',run,source);
     catch exception
         fprintf('\n%s: %s\n',source,exception.message);
         continue
@@ -35,7 +35,7 @@ for k = 1:numel(p.sources)
         end
     end
 end
-summary = wg_face_label_summary(run.gmtry);
+summary = wg_core('face_label_summary',run.gmtry);
 fprintf('\nNonzero face labels:\n');
 fprintf('  label      faces  components   Rmin      Rmax      Zmin      Zmax\n');
 for k = 1:numel(summary)
