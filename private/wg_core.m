@@ -467,7 +467,9 @@ end
 
 %% wg_load_run
 function run = wg_load_run(p)
-wg_setup();
+setup = wg_setup();
+run.setup = setup;
+run.cluster = setup.cluster;
 run.parameters = p;
 run.sources = struct();
 run.cache = struct();
@@ -501,11 +503,24 @@ for k = 1:numel(names)
             extra{j} = fullfile(dirs{j},'b2fplasmf_us');
         end
         candidates = [candidates,extra];
+    elseif strcmp(key,'geometry')
+        % Standard files are named b2fgmtry; accept the documented bfgmtry
+        % spelling as a fallback without changing existing search priority.
+        extra = cell(size(dirs));
+        for j = 1:numel(dirs)
+            extra{j} = fullfile(dirs{j},'bfgmtry');
+        end
+        candidates = [candidates,extra];
     end
     run.files.(key) = wg_find_file(candidates);
 end
 if isempty(run.files.geometry)
-    error('WG:MissingGeometry','No b2fgmtry found for %s',runDir);
+    error('WG:MissingGeometry','No b2fgmtry or bfgmtry found for %s',runDir);
+end
+if exist('read_b2fgmtry_us','file') ~= 2
+    error('WG:MissingReaders',['The wide-grid MATLAB readers are unavailable. ' ...
+        'setup selected %s; set SOLPSWG_MATLAB_POSTPROCESSING to a checkout ' ...
+        'containing IO/read_b2fgmtry_us.m and the other _us readers.'],setup.readerDir);
 end
 run.gmtry = read_b2fgmtry_us(run.files.geometry);
 if run.gmtry.isClassicalGrid ~= 0
@@ -1242,12 +1257,116 @@ end
 
 
 %% wg_setup
-function wg_setup()
+function config = wg_setup(requestedCluster)
+persistent manualCluster
+if nargin >= 1
+    requestedCluster = wg_validate_cluster(requestedCluster);
+    if strcmp(requestedCluster,'auto')
+        manualCluster = '';
+    else
+        manualCluster = requestedCluster;
+    end
+else
+    requestedCluster = '';
+end
+clusterSource = 'auto';
+if nargin >= 1 && ~strcmp(requestedCluster,'auto')
+    clusterSource = 'manual';
+end
+if isempty(requestedCluster) && ~isempty(manualCluster)
+    requestedCluster = manualCluster;
+    clusterSource = 'manual';
+end
+environmentCluster = strtrim(getenv('SOLPSWG_CLUSTER'));
+if isempty(requestedCluster) && ~isempty(environmentCluster)
+    requestedCluster = wg_validate_cluster(environmentCluster);
+    clusterSource = 'environment';
+end
+if isempty(requestedCluster)
+    requestedCluster = 'auto';
+end
+
 coreFile = mfilename('fullpath');
 toolkitRoot = fileparts(fileparts(coreFile));
-repoRoot = fileparts(fileparts(toolkitRoot));
+userRoot = fileparts(fileparts(toolkitRoot));
+hostName = lower(strtrim(getenv('HOSTNAME')));
+if isempty(hostName)
+    try
+        hostName = lower(strtrim(char(java.net.InetAddress.getLocalHost().getHostName())));
+    catch
+        hostName = '';
+    end
+end
+
+% Hostname is authoritative on known clusters. The path check is a fallback
+% for batch environments that do not propagate HOSTNAME to MATLAB.
+if strcmp(requestedCluster,'auto')
+    if strcmp(hostName,'lac3') || strncmp(hostName,'lac3.',5)
+        requestedCluster = 'lac3';
+        clusterSource = 'hostname';
+    elseif strcmp(hostName,'viz06') || strncmp(hostName,'viz06.',6)
+        requestedCluster = 'viz06';
+        clusterSource = 'hostname';
+    elseif isfolder(fullfile(userRoot,'solps_ssh')) && ...
+            (isfolder(fullfile(toolkitRoot,'MatlabPostProcessing')) || ...
+            isfolder(fullfile(fileparts(toolkitRoot),'SOLPS-ITER')))
+        requestedCluster = 'lac3';
+        clusterSource = 'layout';
+    else
+        requestedCluster = 'viz06';
+        clusterSource = 'legacy-fallback';
+    end
+end
+
+readerOverride = strtrim(getenv('SOLPSWG_MATLAB_POSTPROCESSING'));
+shotRoot = '';
+switch requestedCluster
+    case 'lac3'
+        % lac3 uses <userRoot>/GIT/SOLPSwg_matlab and stores MDS data in
+        % <userRoot>/solps_ssh/<MDS_number>. Prefer readers bundled in the
+        % toolkit, with external SOLPS-ITER locations retained as fallbacks.
+        shotRoot = fullfile(userRoot,'solps_ssh');
+        readerDir = fullfile(toolkitRoot,'MatlabPostProcessing');
+        if ~isfolder(readerDir)
+            readerDir = fullfile(fileparts(toolkitRoot),'SOLPS-ITER','scripts','MatlabPostProcessing');
+        end
+        solpsTop = strtrim(getenv('SOLPSTOP'));
+        if ~isfolder(readerDir) && ~isempty(solpsTop)
+            readerDir = fullfile(solpsTop,'scripts','MatlabPostProcessing');
+        end
+    case 'viz06'
+        % Keep the original scripts.local/SOLPSwg_matlab path derivation.
+        readerDir = fullfile(userRoot,'scripts','MatlabPostProcessing');
+end
+if ~isempty(readerOverride)
+    readerDir = readerOverride;
+end
+if strcmp(requestedCluster,'lac3') && ~isfolder(readerDir)
+    error('WG:ReaderDirectory',['MatlabPostProcessing was not found at %s. ' ...
+        'Set SOLPSWG_MATLAB_POSTPROCESSING to a wide-grid-enabled ' ...
+        'SOLPS-ITER/scripts/MatlabPostProcessing directory.'],readerDir);
+end
 addpath(toolkitRoot);
-addpath(genpath(fullfile(repoRoot,'scripts','MatlabPostProcessing')));
+addpath(genpath(readerDir));
+config.cluster = requestedCluster;
+config.clusterSource = clusterSource;
+config.hostName = hostName;
+config.toolkitRoot = toolkitRoot;
+config.readerDir = readerDir;
+config.shotRoot = shotRoot;
+end
+
+function cluster = wg_validate_cluster(cluster)
+if isstring(cluster) && isscalar(cluster)
+    cluster = char(cluster);
+end
+if ~ischar(cluster)
+    error('WG:Cluster','Cluster must be auto, lac3, or viz06.');
+end
+cluster = lower(strtrim(cluster));
+if ~ismember(cluster,{'auto','lac3','viz06'})
+    error('WG:Cluster','Unknown cluster ''%s''; choose auto, lac3, or viz06.',cluster);
+end
 end
 
 

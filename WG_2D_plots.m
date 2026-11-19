@@ -1,11 +1,16 @@
 clearvars;
 clc;
-wg_core('setup');
+runConfig = wg_core('setup');
 
 %% User parameters
 p = wg_core('defaults');
-% Run containing SOLPS output. Example: replace this path with '.../run2'.
-p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+% Run containing SOLPS output. On lac3, replace 186317 with the MDS number.
+% The original viz06 run example remains unchanged when that cluster is selected.
+if strcmp(runConfig.cluster,'lac3')
+    p.runDir = fullfile(runConfig.shotRoot,'186317');
+else
+    p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+end
 % Empty searches runDir, b2mn.exe.dir, ../baserun, and baserun for b2fgmtry.
 % Example: fullfile(p.runDir,'../baserun/b2fgmtry') selects the geometry explicitly.
 p.geometryFile = '';

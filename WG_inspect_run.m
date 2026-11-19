@@ -1,12 +1,17 @@
 clearvars;
 clc;
-wg_core('setup');
+runConfig = wg_core('setup');
 
 %% User parameters
 p = wg_core('defaults');
-% Run to inspect. Example: replace this with another run containing b2fstate and fort.44.
-% p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
-p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91207_D+C_t=1.4/noDRIFTS_033150';
+% Run to inspect. On lac3, replace 186317 with another MDS number if needed.
+% The original viz06 run example remains unchanged when that cluster is selected.
+if strcmp(runConfig.cluster,'lac3')
+    p.runDir = fullfile(runConfig.shotRoot,'186317');
+else
+    % p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+    p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91207_D+C_t=1.4/noDRIFTS_033150';
+end
 
 % Sources to read and summarize; an absent formatted b2fplasmf is reported without stopping.
 % Example: {'b2fstate','ft44','ft46'} avoids checking unavailable sources.

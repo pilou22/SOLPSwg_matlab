@@ -33,8 +33,11 @@ scripts are the intended user entry points.
 
 - MATLAB R2023a or newer is recommended.
 - An unstructured SOLPS-ITER wide-grid run directory.
-- The parent project should contain the existing MATLAB readers in
-  `scripts/MatlabPostProcessing`.
+- The wide-grid MATLAB readers, including `IO/read_b2fgmtry_us.m` and the
+  other `_us` readers used by `wg_core`. On lac3 these are bundled in
+  `SOLPSwg_matlab/MatlabPostProcessing`; on viz06 they normally reside in the
+  parent SOLPS-ITER working tree under `scripts/MatlabPostProcessing`.
+  Ordinary structured-grid readers are not interchangeable.
 
 No additional MATLAB toolboxes are required.
 
@@ -42,8 +45,10 @@ No additional MATLAB toolboxes are required.
 
 ## Expected directory layout
 
-The toolbox is designed to live under `scripts.local/` in a SOLPS-ITER working
-tree, for example:
+### viz06.efgw.cineca.it (original layout)
+
+The original setup remains supported. The toolbox lives under `scripts.local/`
+in a SOLPS-ITER working tree, for example:
 
 ```text
 solps-iter_wg/
@@ -60,8 +65,110 @@ solps-iter_wg/
     └── <machine>/<case>/<run>/
 ```
 
-`wg_core('setup')` adds the required `MatlabPostProcessing` readers to the
-MATLAB path automatically.
+On viz06, setup derives the reader path from this layout exactly as before.
+
+### lac3.epfl.ch
+
+The expected lac3 layout is:
+
+```text
+/NoTivoli/<username>/
+├── GIT/
+│   └── SOLPSwg_matlab/
+│       └── MatlabPostProcessing/
+└── solps_ssh/
+    └── <MDS_number>/
+        ├── b2fgmtry
+        ├── b2fstate
+        ├── b2fstati
+        ├── b2fplasmf
+        ├── fort.33
+        ├── fort.34
+        ├── fort.35
+        ├── fort.44
+        └── fort.46
+```
+
+The standard geometry filename is `b2fgmtry`; `bfgmtry` is also accepted as a
+fallback. Only files needed by the selected quantities must be present.
+
+### Cluster detection and path configuration
+
+The driver scripts call setup with an output so the selected paths can be
+inspected:
+
+```matlab
+runConfig = wg_core('setup');
+disp(runConfig);
+```
+
+The returned structure contains `cluster`, `clusterSource`, `hostName`,
+`toolkitRoot`, `readerDir`, and `shotRoot`. `shotRoot` is the lac3 MDS data root,
+and is empty for the original viz06 run-directory layout.
+
+Automatic selection uses the following rules, in order:
+
+1. An explicit cluster argument or `SOLPSWG_CLUSTER` selects `lac3` or `viz06`.
+2. Otherwise, hostnames `lac3`/`lac3.*` and `viz06`/`viz06.*` select the
+   corresponding cluster.
+3. If the hostname is unavailable or unrecognised, `solps_ssh` together with
+   bundled `MatlabPostProcessing` readers (or a sibling `GIT/SOLPS-ITER`
+   checkout) selects lac3.
+4. If neither test matches, setup uses the original viz06-compatible reader
+   path. Select the cluster explicitly on other installations.
+
+For manual selection, change the setup call near the top of a driver script:
+
+```matlab
+runConfig = wg_core('setup','lac3');  % Also use: wg_core('setup','viz06')
+% Use wg_core('setup','auto') for automatic/environment selection.
+```
+
+Because `wg_core` is a private implementation function, call it from the
+provided parent-directory driver scripts rather than from a different working
+directory. A manual selection is retained by subsequent setup/load calls in
+the same MATLAB session until `setup('auto')` is called from a driver. It can
+instead be selected from the MATLAB command window before running a driver:
+
+```matlab
+setenv('SOLPSWG_CLUSTER','lac3');  % 'viz06' and 'auto' are also accepted
+run('/path/to/SOLPSwg_matlab/WG_2D_plots.m');
+```
+
+On lac3, the three driver scripts construct `p.runDir` as
+`fullfile(runConfig.shotRoot,'186317')`. Replace the example MDS number
+`186317` with the desired directory name. On viz06, they retain their original
+example `p.runDir` paths. A custom `p.runDir` can always be assigned directly,
+regardless of cluster.
+
+The reader directory is selected as follows:
+
+- On viz06, the original `<working-tree>/scripts/MatlabPostProcessing` path is
+  preserved.
+- On lac3, the default is the bundled
+  `/NoTivoli/<username>/GIT/SOLPSwg_matlab/MatlabPostProcessing` directory. If
+  it is absent, setup tries the sibling
+  `GIT/SOLPS-ITER/scripts/MatlabPostProcessing`, then
+  `$SOLPSTOP/scripts/MatlabPostProcessing`.
+- On either cluster, `SOLPSWG_MATLAB_POSTPROCESSING` overrides the selected
+  reader directory. Set it to the `MatlabPostProcessing` directory itself, not
+  to the SOLPS-ITER root:
+
+```matlab
+setenv('SOLPSWG_MATLAB_POSTPROCESSING', ...
+    '/path/to/SOLPS-ITER/scripts/MatlabPostProcessing');
+% Now run any of the three driver scripts.
+```
+
+The lac3 defaults assume the toolkit is exactly at
+`/NoTivoli/<username>/GIT/SOLPSwg_matlab`, because `shotRoot` is derived from
+that location. For a relocated toolkit, set `p.runDir` explicitly and use the
+reader override as needed. The selected reader directory must contain the
+wide-grid `_us` implementations; `wg_core('load_run',p)` reports a
+`WG:MissingReaders` error if its geometry reader is unavailable.
+
+`wg_core('setup')` adds the toolkit and all `MatlabPostProcessing`
+subdirectories to the MATLAB path automatically.
 
 ---
 
@@ -401,6 +508,9 @@ For each required file, `wg_core` searches in this order:
 2. `runDir/b2mn.exe.dir`
 3. `runDir/../baserun`
 4. `runDir/baserun`
+
+For geometry, these directories are searched for `b2fgmtry` first and then for
+the fallback spelling `bfgmtry`.
 
 Individual paths can be overridden explicitly:
 

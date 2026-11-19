@@ -1,12 +1,17 @@
 clearvars;
 clc;
-wg_core('setup');
+runConfig = wg_core('setup');
 
 %% User parameters
 p = wg_core('defaults');
-% Run containing the SOLPS output files. Example: replace this with '.../run2'.
-% p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
-p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91207_D+C_t=1.4/noDRIFTS_033150';
+% Run containing the SOLPS output files. On lac3, replace 186317 with the MDS number.
+% The original viz06 run example remains unchanged when that cluster is selected.
+if strcmp(runConfig.cluster,'lac3')
+    p.runDir = fullfile(runConfig.shotRoot,'186317');
+else
+    % p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+    p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91207_D+C_t=1.4/noDRIFTS_033150';
+end
 % One quantity becomes one panel. Example species selection: wg_core('spec','b2fstate','na',2).
 % Sources are b2fstate, b2fstati, b2fplasmf, ft44, and ft46; indices are one-based.
 p.quantities = {
