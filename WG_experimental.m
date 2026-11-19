@@ -65,7 +65,7 @@ else
 end
 analysisTime = experimentalTime;
 
-experimentalTS = get_edge_data(shot,timeVector,'',{'TS'});
+experimentalTS = get_edge_data(shot,[timeVector(1) timeVector(end)],'',{'TS'});
 if ~isfield(experimentalTS,'TS') || ~experimentalTS.TS.available
     error('WG:Thomson','No Thomson data available for shot %d.',shot);
 end
@@ -118,9 +118,9 @@ for k = 1:2
     grid(ax,'on');
     box(ax,'on');
     wg_experimental_separatrix_lines(ax,solpsSeparatrixZ,[0.1,0.1,0.1],':', ...
-        'SOLPS equilibrium');
+        'SOLPS \rho=1');
     wg_experimental_separatrix_lines(ax,initialExperimentalSeparatrixZ, ...
-        experimentalSepColor,'--','TS equilibrium, \rho=1');
+        experimentalSepColor,'--','TS \rho=1');
     legend(ax,'show','Location','best');
 end
 tsTitle = sgtitle(sprintf('TS versus SOLPS: shot %d, MDS %d, R=%.4f m, t=%.4f s', ...
