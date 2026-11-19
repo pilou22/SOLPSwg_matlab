@@ -5,7 +5,9 @@ wg_core('setup');
 %% User parameters
 p = wg_core('defaults');
 % Run to inspect. Example: replace this with another run containing b2fstate and fort.44.
-p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+% p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91207_D+C_t=1.4/noDRIFTS_033150';
+
 % Sources to read and summarize; an absent formatted b2fplasmf is reported without stopping.
 % Example: {'b2fstate','ft44','ft46'} avoids checking unavailable sources.
 p.sources = {'b2fstate','b2fplasmf','ft44','ft46'};

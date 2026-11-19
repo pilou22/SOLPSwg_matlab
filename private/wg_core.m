@@ -1406,19 +1406,11 @@ if isempty(p.upstreamPsiSep)
 else
     psiSep = p.upstreamPsiSep;
 end
-[~,axisIndex] = max(psi);
-Raxis = median(R(psi == psi(axisIndex)));
-switch lower(p.upstreamSide)
-    case 'outer'
-        branch = R >= Raxis;
-    case 'inner'
-        branch = R <= Raxis;
-    otherwise
-        error('WG:UpstreamSide','upstreamSide must be outer or inner.');
+side = lower(p.upstreamSide);
+if ~ismember(side,{'inner','outer'})
+    error('WG:UpstreamSide','upstreamSide must be outer or inner.');
 end
-R = R(branch);
-Z = Z(branch);
-psi = psi(branch);
+[R,Z,psi,selection,Rcross] = wg_select_upstream_branch(find(valid),R,Z,psi,psiSep,side);
 [psi,order] = sort(psi);
 R = R(order);
 Z = Z(order);
@@ -1447,9 +1439,99 @@ mapping.R = Runique;
 mapping.Z = Zunique;
 mapping.psiSep = psiSep;
 mapping.Rsep = Rsep;
-mapping.Raxis = Raxis;
+mapping.Raxis = NaN;
+mapping.Rmin = min(Runique);
+mapping.Rmax = max(Runique);
+mapping.selection = selection;
+mapping.separatrixCrossingR = Rcross;
 mapping.side = lower(p.upstreamSide);
 mapping.referenceLine = line;
 mapping.extrapolate = p.upstreamExtrapolate;
+end
+
+function [R,Z,psi,selection,Rcross] = wg_select_upstream_branch(validIndices,R,Z,psi,psiSep,side)
+if numel(unique(psi)) < 2
+    error('WG:UpstreamFlux','The requested upstream branch does not contain a usable flux interval.');
+end
+runEdges = [1;find(diff(validIndices)>1)+1;numel(validIndices)+1];
+fluxRange = max(psi)-min(psi);
+fluxTol = max(1e-6*fluxRange,100*eps(max(1,max(abs(psi)))));
+crossingBranches = zeros(numel(psi),3);
+nCrossingBranches = 0;
+monotonicRuns = zeros(numel(runEdges)-1,3);
+nMonotonicRuns = 0;
+for k = 1:numel(runEdges)-1
+    first = runEdges(k);
+    last = runEdges(k+1)-1;
+    localR = R(first:last);
+    localPsi = psi(first:last);
+    count = last-first+1;
+    if count < 2 || numel(unique(localPsi)) < 2
+        continue
+    end
+    delta = diff(localPsi);
+    if all(delta >= -fluxTol) || all(delta <= fluxTol)
+        nMonotonicRuns = nMonotonicRuns+1;
+        monotonicRuns(nMonotonicRuns,:) = [mean(localR),first,last];
+    end
+    shifted = localPsi-psiSep;
+    validCrossing = shifted(1:end-1).*shifted(2:end) <= 0 & abs(delta) > fluxTol;
+    crossings = find(validCrossing);
+    for j = 1:numel(crossings)
+        c = crossings(j);
+        direction = sign(delta(c));
+        left = c;
+        for m = c:-1:2
+            if (localPsi(m)-localPsi(m-1))*direction < -fluxTol
+                left = m;
+                break
+            end
+            left = m-1;
+        end
+        right = c+1;
+        for m = c+1:count-1
+            if (localPsi(m+1)-localPsi(m))*direction < -fluxTol
+                right = m;
+                break
+            end
+            right = m+1;
+        end
+        if numel(unique(localPsi(left:right))) < 2
+            continue
+        end
+        Rc = localR(c)+(localR(c+1)-localR(c))*(-shifted(c))/delta(c);
+        nCrossingBranches = nCrossingBranches+1;
+        crossingBranches(nCrossingBranches,:) = [Rc,first+left-1,first+right-1];
+    end
+end
+crossingBranches = crossingBranches(1:nCrossingBranches,:);
+monotonicRuns = monotonicRuns(1:nMonotonicRuns,:);
+if ~isempty(crossingBranches)
+    Rcross = crossingBranches(:,1);
+    if strcmp(side,'outer')
+        [~,selected] = max(Rcross);
+    else
+        [~,selected] = min(Rcross);
+    end
+    selection = 'separatrix crossing';
+    Rcross = Rcross(selected);
+    branch = crossingBranches(selected,2:3);
+elseif ~isempty(monotonicRuns)
+    Rcross = NaN;
+    selection = 'monotonic region';
+    if strcmp(side,'outer')
+        [~,selected] = max(monotonicRuns(:,1));
+    else
+        [~,selected] = min(monotonicRuns(:,1));
+    end
+    branch = monotonicRuns(selected,2:3);
+else
+    error('WG:UpstreamBranch', ...
+        'No monotonic flux interval with at least two values crosses psiSep=%g on the requested %s reference line. Choose a valid upstreamReferenceLine or correct upstreamPsiSep.', ...
+        psiSep,side);
+end
+R = R(branch(1):branch(2));
+Z = Z(branch(1):branch(2));
+psi = psi(branch(1):branch(2));
 end
 

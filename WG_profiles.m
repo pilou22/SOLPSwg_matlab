@@ -5,7 +5,8 @@ wg_core('setup');
 %% User parameters
 p = wg_core('defaults');
 % Run containing the SOLPS output files. Example: replace this with '.../run2'.
-p.runDir = '/pfs/work/g2psint/solps-iter_wg_github_svdk/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+% p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91685/91685_DDN_3/run1';
+p.runDir = '/pfs/work/g2psint/solps-iter_wg_github/runs/TCV/TCVtblld/91207_D+C_t=1.4/noDRIFTS_033150';
 % One quantity becomes one panel. Example species selection: wg_core('spec','b2fstate','na',2).
 % Sources are b2fstate, b2fstati, b2fplasmf, ft44, and ft46; indices are one-based.
 p.quantities = {
@@ -19,7 +20,7 @@ p.profileMode = {'line'};
 % fcLbl values associated with each named target. Example: [1,2] combines DDN inner targets.
 p.innerTargetLabels = [1];
 % Example: [3,4] combines DDN outer targets; run WG_inspect_run to check new geometry.
-p.outerTargetLabels = [4];
+p.outerTargetLabels = [2];
 % Used for profileMode='labels'. Example: [5,6] selects those wall/boundary labels.
 p.customTargetLabels = [];
 % Optional target restriction [Rmin,Rmax,Zmin,Zmax]. Example: [0.7,0.9,-0.75,-0.70].
@@ -36,23 +37,23 @@ p.targetCellSide = 'physical';
 p.targetFaceAreaNormalize = false;
 % Target x-axis: 's' (geometric face-centre arc length in m), 'R', 'Z', 'psi', 'index', or 'drsep'.
 % Example: 'drsep' maps to upstream radial distance from the separatrix.
-p.targetX = 'Z';
+p.targetX = 'drsep';
 % Reverse each ordered target component. Example: true reverses the arc-length orientation.
 p.targetReverse = false;
 % Arbitrary profile segment [R1,Z1,R2,Z2], used by profileMode='line'.
 % Example: [0.65,0,1.05,0] is a horizontal cut through Z=0.
-p.lineEndpoints = [0.8,-0.2,0.8,-0.75];
+p.lineEndpoints = [0.8,-0.4,0.8,-0.75];
 % Number of evenly spaced sample positions. Example: 1000 produces a finer profile.
 p.lineSamples = 400;
 % 'native' preserves native cells/triangles or direct face crossings; 'linear' and 'nearest'
 % interpolate onto the requested line. Example: 'linear' gives smoother cell-field profiles.
-p.profileMethod = 'native';
+p.profileMethod = 'nearest';
 % Line x-axis: 'auto' (R or Z for horizontal/vertical cuts), 's', 'R', 'Z', or 'drsep'.
 % 's' is distance from (R1,Z1). Example: 'R' forces major radius on the x-axis.
 p.profileX = 'Z';
 % Reference cut for drsep: [R1,Z1,R2,Z2]. Empty chooses a horizontal Z=0 cut across the mesh.
 % Example: [0.90,0,1.14,0] samples only the outer-midplane side.
-p.upstreamReferenceLine = [];
+p.upstreamReferenceLine = [0.5, 0.11, 1.114, 0.11];
 % Separatrix poloidal flux psi, in geometry-file units. Empty chooses the fsPsi nearest zero.
 % Example: set p.upstreamPsiSep=-1.75e-5 instead of relying on automatic identification.
 p.upstreamPsiSep = [];
